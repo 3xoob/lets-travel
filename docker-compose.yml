@@ -1,0 +1,127 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lt-postgres
+    environment:
+      POSTGRES_DB: letstravel
+      POSTGRES_USER: letstravel
+      POSTGRES_PASSWORD: letstravel_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U letstravel"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: lt-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: lt-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  neo4j:
+    image: neo4j:5.16-community
+    container_name: lt-neo4j
+    environment:
+      NEO4J_AUTH: neo4j/letstravel_dev
+      NEO4J_PLUGINS: '["apoc"]'
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p letstravel_dev 'RETURN 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: lt-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/letstravel
+      SPRING_DATASOURCE_USERNAME: letstravel
+      SPRING_DATASOURCE_PASSWORD: letstravel_dev
+      SPRING_REDIS_HOST: redis
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      SPRING_NEO4J_URI: bolt://neo4j:7687
+      SPRING_NEO4J_AUTHENTICATION_USERNAME: neo4j
+      SPRING_NEO4J_AUTHENTICATION_PASSWORD: letstravel_dev
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-dev_secret_change_me_in_production_32chars}
+      APP_STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      APP_STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
+      APP_PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-placeholder}
+      APP_PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-placeholder}
+    volumes:
+      - uploads_data:/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lt-frontend
+    depends_on:
+      - backend
+
+  nginx:
+    image: nginx:alpine
+    container_name: lt-nginx
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx-dev.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  es_data:
+  neo4j_data:
+  uploads_data:

@@ -1,0 +1,14 @@
+spring:
+  jpa:
+    show-sql: false
+
+server:
+  tomcat:
+    max-threads: 200
+
+logging:
+  level:
+    root: WARN
+    com.letstravel: INFO
+  file:
+    name: /app/logs/letstravel.log
