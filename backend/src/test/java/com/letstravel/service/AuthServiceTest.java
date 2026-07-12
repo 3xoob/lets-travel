@@ -40,12 +40,13 @@ class AuthServiceTest {
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
         when(jwtUtil.generateAccessToken(any())).thenReturn("access_token");
         when(jwtUtil.generateRefreshToken(anyString())).thenReturn("refresh_token");
+        when(appProperties.getJwt()).thenReturn(new AppProperties.Jwt());
 
         var res = authService.register(req);
 
         assertThat(res.accessToken()).isEqualTo("access_token");
         assertThat(res.user().email()).isEqualTo("test@example.com");
-        assertThat(res.user().role()).isEqualTo(UserRole.TRAVELER);
+        assertThat(res.user().role()).isEqualTo(UserRole.TRAVELER.name());
     }
 
     @Test
@@ -73,6 +74,6 @@ class AuthServiceTest {
 
         assertThat(dto.email()).isEqualTo("u@test.com");
         assertThat(dto.firstName()).isEqualTo("Alice");
-        assertThat(dto.role()).isEqualTo(UserRole.TRAVELER);
+        assertThat(dto.role()).isEqualTo(UserRole.TRAVELER.name());
     }
 }

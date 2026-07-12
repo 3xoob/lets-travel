@@ -18,7 +18,6 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,8 +74,6 @@ class SubscriptionServiceTest {
         var req = new SubscribeRequest(travel.getId(), PaymentMethod.STRIPE);
         when(userRepository.findByEmail(traveler.getEmail())).thenReturn(Optional.of(traveler));
         when(travelRepository.findById(travel.getId())).thenReturn(Optional.of(travel));
-        when(subscriptionRepository.findByTravelIdAndTravelerId(any(), any()))
-            .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> subscriptionService.subscribe(req, traveler.getEmail()))
             .isInstanceOf(BusinessException.class);
@@ -88,8 +85,6 @@ class SubscriptionServiceTest {
         var req = new SubscribeRequest(travel.getId(), PaymentMethod.STRIPE);
         when(userRepository.findByEmail(traveler.getEmail())).thenReturn(Optional.of(traveler));
         when(travelRepository.findById(travel.getId())).thenReturn(Optional.of(travel));
-        when(subscriptionRepository.findByTravelIdAndTravelerId(any(), any()))
-            .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> subscriptionService.subscribe(req, traveler.getEmail()))
             .isInstanceOf(BusinessException.class);
