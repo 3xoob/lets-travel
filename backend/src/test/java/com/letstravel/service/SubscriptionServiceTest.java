@@ -16,7 +16,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -40,14 +39,14 @@ class SubscriptionServiceTest {
     @BeforeEach
     void setUp() {
         traveler = User.builder()
-            .id(UUID.randomUUID())
+            .id(1L)
             .email("traveler@test.com")
             .role(UserRole.TRAVELER)
             .isActive(true)
             .build();
 
         travel = Travel.builder()
-            .id(UUID.randomUUID())
+            .id(1L)
             .title("Test Trip")
             .price(BigDecimal.valueOf(500))
             .status(TravelStatus.PUBLISHED)
